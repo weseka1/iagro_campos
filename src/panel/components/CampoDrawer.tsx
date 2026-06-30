@@ -251,7 +251,7 @@ export default function CampoDrawer({
                 className="flex-1"
                 onClick={() => {
                   const precio = prop.categoria === "campo" ? "A consultar" : fmtUSD(prop.precioUSD);
-                  const msg = encodeURIComponent(`${prop.titulo} — ${precio} · ${prop.zona}\nMás info: iagrocampos.com.ar/#/propiedad/${prop.id}`);
+                  const msg = encodeURIComponent(`${prop.titulo} — ${precio} · ${prop.zona}\nMás info: iagrocampos.com.ar/propiedad/${prop.id}`);
                   window.open(`https://wa.me/?text=${msg}`, "_blank");
                 }}
               >
