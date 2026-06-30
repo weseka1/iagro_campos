@@ -1,0 +1,20 @@
+# Render Blueprint — IAGRO Campos (Vite + React, sitio estático)
+# Uso: en Render → New → Blueprint → conectás este repo → carga todo de acá.
+# OJO: las 2 claves de Supabase NO van en el repo; se cargan en Render (sync: false).
+services:
+  - type: web
+    name: iagrocampos
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: false
+    # SPA: cualquier ruta (ej. /propiedades, /panel) cae a index.html
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
