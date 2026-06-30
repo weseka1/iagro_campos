@@ -1,4 +1,6 @@
 import { useMemo } from "react";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 import { FileDown, FileSpreadsheet } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -62,9 +64,105 @@ export default function Reportes() {
   // Valor por aptitud para barras
   const valorAptitud = carteraPorAptitud.map((d) => ({ ...d, name: d.name }));
 
-  const exportar = (tipo: string) => {
-    push(`Generando reporte ${tipo}…`, "loading");
-    setTimeout(() => push(`Reporte ${tipo} listo para descargar ✓`, "success"), 1600);
+  const totProp = porZona.reduce((a, r) => a + r.campos, 0);
+  const totHa = porZona.reduce((a, r) => a + r.ha, 0);
+  const totVal = porZona.reduce((a, r) => a + r.valor, 0);
+
+  // PDF real con jsPDF: cabecera de marca + resumen + dos tablas, y descarga directa.
+  const exportarPDF = () => {
+    try {
+      const doc = new jsPDF({ unit: "pt", format: "a4" });
+      const W = doc.internal.pageSize.getWidth();
+      const hoy = new Date();
+      const fechaTxt = hoy.toLocaleDateString("es-AR", { day: "2-digit", month: "long", year: "numeric" });
+
+      doc.setFillColor(46, 125, 82);
+      doc.rect(0, 0, W, 72, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(18);
+      doc.text("IAGRO Campos", 40, 34);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10);
+      doc.text("Inmobiliaria rural · Bahía Blanca", 40, 51);
+      doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+      doc.text("Reporte de gestión", W - 40, 34, { align: "right" });
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.text(fechaTxt, W - 40, 51, { align: "right" });
+
+      doc.setTextColor(35, 35, 35); doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text("Resumen de cartera", 40, 104);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(95, 95, 95);
+      doc.text(`${totProp} propiedades  ·  ${fmtNum(totHa)} ha  ·  ${fmtUSD(totVal, { short: true })} en cartera`, 40, 121);
+
+      autoTable(doc, {
+        startY: 138,
+        head: [["Zona", "Propiedades", "Hectáreas", "Valor"]],
+        body: porZona.map((r) => [r.zona, String(r.campos), fmtNum(r.ha), r.valor ? fmtUSD(r.valor, { short: true }) : "—"]),
+        foot: [["Total", String(totProp), fmtHa(totHa), fmtUSD(totVal, { short: true })]],
+        headStyles: { fillColor: [46, 125, 82], textColor: 255, fontStyle: "bold" },
+        footStyles: { fillColor: [240, 237, 228], textColor: 35, fontStyle: "bold" },
+        styles: { fontSize: 9, cellPadding: 5 },
+        alternateRowStyles: { fillColor: [248, 246, 240] },
+        columnStyles: { 1: { halign: "center" }, 2: { halign: "right" }, 3: { halign: "right" } },
+        margin: { left: 40, right: 40 },
+      });
+
+      const y = (doc as any).lastAutoTable.finalY + 26;
+      doc.setTextColor(35, 35, 35); doc.setFont("helvetica", "bold"); doc.setFontSize(12);
+      doc.text("Conversión por canal", 40, y);
+      autoTable(doc, {
+        startY: y + 12,
+        head: [["Canal", "Consultas", "Cerradas", "Conversión"]],
+        body: porCanal.map((r) => [r.nombre, String(r.total), String(r.cerrados), `${r.conv}%`]),
+        headStyles: { fillColor: [46, 125, 82], textColor: 255, fontStyle: "bold" },
+        styles: { fontSize: 9, cellPadding: 5 },
+        alternateRowStyles: { fillColor: [248, 246, 240] },
+        columnStyles: { 1: { halign: "center" }, 2: { halign: "center" }, 3: { halign: "right" } },
+        margin: { left: 40, right: 40 },
+      });
+
+      const ph = doc.internal.pageSize.getHeight();
+      doc.setFontSize(8); doc.setTextColor(150, 150, 150);
+      doc.text("Generado por el panel de IAGRO Campos · iagrocampos.com.ar", 40, ph - 24);
+
+      doc.save(`IAGRO-Reporte-${hoy.toISOString().slice(0, 10)}.pdf`);
+      push("Reporte PDF descargado ✓", "success");
+    } catch {
+      push("No se pudo generar el PDF", "error");
+    }
+  };
+
+  // Excel real: CSV (separador ; para que Excel en español lo abra en columnas) con BOM para acentos.
+  const exportarExcel = () => {
+    try {
+      const hoy = new Date();
+      const esc = (v: any) => {
+        const s = String(v ?? "");
+        return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      };
+      const rows: (string | number)[][] = [];
+      rows.push(["IAGRO Campos — Reporte de gestión", hoy.toLocaleDateString("es-AR")]);
+      rows.push([]);
+      rows.push(["Cartera por zona"]);
+      rows.push(["Zona", "Propiedades", "Hectáreas", "Valor USD"]);
+      porZona.forEach((r) => rows.push([r.zona, r.campos, Math.round(r.ha), Math.round(r.valor)]));
+      rows.push(["Total", totProp, Math.round(totHa), Math.round(totVal)]);
+      rows.push([]);
+      rows.push(["Conversión por canal"]);
+      rows.push(["Canal", "Consultas", "Cerradas", "Conversión %"]);
+      porCanal.forEach((r) => rows.push([r.nombre, r.total, r.cerrados, r.conv]));
+
+      const csv = "﻿" + rows.map((r) => r.map(esc).join(";")).join("\r\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `IAGRO-Reporte-${hoy.toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      push("Reporte Excel descargado ✓", "success");
+    } catch {
+      push("No se pudo generar el Excel", "error");
+    }
   };
 
   return (
@@ -74,10 +172,10 @@ export default function Reportes() {
         subtitle="Análisis de cartera, demanda y resultados"
         actions={
           <>
-            <Btn variant="ghost" onClick={() => exportar("Excel")}>
+            <Btn variant="ghost" onClick={exportarExcel}>
               <FileSpreadsheet size={16} /> Exportar Excel
             </Btn>
-            <Btn variant="primary" onClick={() => exportar("PDF")}>
+            <Btn variant="primary" onClick={exportarPDF}>
               <FileDown size={16} /> Exportar PDF
             </Btn>
           </>

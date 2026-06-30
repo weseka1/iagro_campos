@@ -40,6 +40,9 @@ interface DataCtx {
   updateCliente: (id: string, patch: Partial<Cliente>) => Promise<void>;
   addVisita: (v: Visita) => Promise<void>;
   updateVisita: (id: string, patch: Partial<Visita>) => Promise<void>;
+  addTasacion: (t: Tasacion) => Promise<void>;
+  updateTasacion: (id: string, patch: Partial<Tasacion>) => Promise<void>;
+  addArrendamiento: (a: Arrendamiento) => Promise<void>;
   // asistente IA
   sugerencias: Sugerencia[];
   sugerenciasPendientes: number;
@@ -153,6 +156,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setVisitas((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     if (supabase) await supabase.from("iagro_visitas").update(patch).eq("id", id).then(() => {}, () => {});
   };
+  const addTasacion = async (t: Tasacion) => {
+    setTasaciones((prev) => [t, ...prev]);
+    if (supabase) await supabase.from("iagro_tasaciones").upsert(t).then(() => {}, () => {});
+  };
+  const updateTasacion = async (id: string, patch: Partial<Tasacion>) => {
+    setTasaciones((prev) => prev.map((x) => (x.id === id ? { ...x, ...patch } : x)));
+    if (supabase) await supabase.from("iagro_tasaciones").update(patch).eq("id", id).then(() => {}, () => {});
+  };
+  const addArrendamiento = async (a: Arrendamiento) => {
+    setArrendamientos((prev) => [a, ...prev]);
+    if (supabase) await supabase.from("iagro_arrendamientos").upsert(a).then(() => {}, () => {});
+  };
 
   // ===== Asistente IA: sugerencias derivadas + las que el humano ya resolvió =====
   const [resueltas, setResueltas] = useState<string[]>([]);
@@ -197,7 +212,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         loading, online, propiedades, leads, clientes, operaciones, visitas, tasaciones, arrendamientos,
         getProp: (id) => propiedades.find((p) => p.id === id),
         addPropiedad, updatePropiedad, deletePropiedad, addLead, updateLead, updateOperacion, addCliente, updateCliente,
-        addVisita, updateVisita,
+        addVisita, updateVisita, addTasacion, updateTasacion, addArrendamiento,
         sugerencias, sugerenciasPendientes: sugerencias.length, resolverSugerencia,
         kpis, consultasPorMes: seedConsultasMes, leadsPorCanal, embudo, carteraPorAptitud,
       }}

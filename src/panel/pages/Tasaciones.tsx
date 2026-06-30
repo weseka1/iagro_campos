@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Plus, Calculator, Clock, CheckCircle2 } from "lucide-react";
 import { useData } from "@/lib/DataProvider";
+import { hoyISO } from "@/lib/fechas";
 import { fmtUSD, fmtFecha, fmtHa } from "@/lib/format";
+import type { Aptitud, Tasacion } from "@/data/types";
 import { PageHeader } from "../components/PageShell";
 import { Btn } from "../components/Controls";
 import Badge from "../components/Badge";
@@ -16,8 +18,31 @@ const inputCls =
 
 export default function Tasaciones() {
   const { push } = useToast();
-  const { tasaciones: allTas } = useData();
+  const { tasaciones: allTas, addTasacion } = useData();
   const [open, setOpen] = useState(false);
+
+  const vacio = { solicitante: "", contacto: "", zona: "", hectareas: "", aptitud: "agrícola" as Aptitud };
+  const [form, setForm] = useState(vacio);
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const registrar = async () => {
+    if (!form.solicitante.trim()) { push("Poné al menos el nombre del solicitante", "error"); return; }
+    const t: Tasacion = {
+      id: "TAS-" + Date.now().toString(36),
+      fechaISO: hoyISO(),
+      solicitante: form.solicitante.trim(),
+      contacto: form.contacto.trim(),
+      zona: form.zona.trim() || "—",
+      hectareas: Number(form.hectareas) || 0,
+      aptitud: form.aptitud,
+      valorEstimadoUSD: null,
+      estado: "solicitada",
+    };
+    await addTasacion(t);
+    setForm(vacio);
+    setOpen(false);
+    push("Tasación registrada como “Solicitada” ✓", "success");
+  };
 
   const solicitadas = allTas.filter((t) => t.estado === "solicitada").length;
   const enProceso = allTas.filter((t) => t.estado === "en_proceso").length;
@@ -88,38 +113,30 @@ export default function Tasaciones() {
         footer={
           <>
             <Btn variant="ghost" onClick={() => setOpen(false)}>Cancelar</Btn>
-            <Btn
-              variant="primary"
-              onClick={() => {
-                setOpen(false);
-                push("Tasación registrada como “Solicitada” ✓");
-              }}
-            >
-              Registrar
-            </Btn>
+            <Btn variant="primary" onClick={registrar}>Registrar</Btn>
           </>
         }
       >
-        <form className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); registrar(); }}>
           <label className="block sm:col-span-2">
             <span className="mb-1 block text-xs font-semibold text-graph-400">Solicitante</span>
-            <input className={inputCls} placeholder="Nombre o razón social" />
+            <input className={inputCls} placeholder="Nombre o razón social" value={form.solicitante} onChange={(e) => set("solicitante", e.target.value)} autoFocus />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-graph-400">Contacto</span>
-            <input className={inputCls} placeholder="Teléfono o mail" />
+            <input className={inputCls} placeholder="Teléfono o mail" value={form.contacto} onChange={(e) => set("contacto", e.target.value)} />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-graph-400">Zona</span>
-            <input className={inputCls} placeholder="Partido / localidad" />
+            <input className={inputCls} placeholder="Partido / localidad" value={form.zona} onChange={(e) => set("zona", e.target.value)} />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-graph-400">Hectáreas</span>
-            <input type="number" className={inputCls} placeholder="500" />
+            <input type="number" className={inputCls} placeholder="500" value={form.hectareas} onChange={(e) => set("hectareas", e.target.value)} />
           </label>
           <label className="block">
             <span className="mb-1 block text-xs font-semibold text-graph-400">Aptitud</span>
-            <select className={inputCls} defaultValue="agrícola">
+            <select className={inputCls} value={form.aptitud} onChange={(e) => set("aptitud", e.target.value)}>
               <option value="agrícola" className="bg-paper-100 text-graph">Agrícola</option>
               <option value="ganadera" className="bg-paper-100 text-graph">Ganadera</option>
               <option value="mixta" className="bg-paper-100 text-graph">Mixta</option>

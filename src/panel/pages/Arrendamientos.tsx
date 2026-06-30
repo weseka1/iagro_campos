@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { AlertTriangle, FileSignature, DollarSign, CalendarX } from "lucide-react";
 import { useData } from "@/lib/DataProvider";
 import { fmtUSD, fmtFecha, fmtHa } from "@/lib/format";
@@ -5,13 +6,44 @@ import { PageHeader } from "../components/PageShell";
 import { Btn } from "../components/Controls";
 import Badge from "../components/Badge";
 import KpiCard from "../components/KpiCard";
+import Modal from "../components/Modal";
 import { useToast } from "../components/Toast";
 import { estadoArrendamiento } from "../ui/estados";
 import { cn } from "../ui/cn";
+import type { Arrendamiento } from "@/data/types";
+
+const inputCls =
+  "h-10 w-full rounded-xl border border-graph/10 bg-graph/[0.04] px-3 text-sm text-graph placeholder:text-graph-400 outline-none transition focus:border-iagro/60 focus:ring-2 focus:ring-iagro/15";
 
 export default function Arrendamientos() {
   const { push } = useToast();
-  const { arrendamientos: allArr, getProp } = useData();
+  const { arrendamientos: allArr, getProp, propiedades, addArrendamiento } = useData();
+  const [open, setOpen] = useState(false);
+
+  const vacio = { arrendatario: "", campoId: "", hectareas: "", valorAnualUSD: "", inicioISO: "", vencimientoISO: "" };
+  const [form, setForm] = useState(vacio);
+  const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
+
+  const crear = async () => {
+    if (!form.arrendatario.trim()) { push("Poné el nombre del arrendatario", "error"); return; }
+    const inicio = form.inicioISO || new Date().toISOString().slice(0, 10);
+    let venc = form.vencimientoISO;
+    if (!venc) { const d = new Date(inicio); d.setFullYear(d.getFullYear() + 1); venc = d.toISOString().slice(0, 10); }
+    const a: Arrendamiento = {
+      id: "ARR-" + Date.now().toString(36),
+      campoId: form.campoId || (propiedades[0]?.id ?? ""),
+      arrendatario: form.arrendatario.trim(),
+      hectareas: Number(form.hectareas) || 0,
+      valorAnualUSD: Number(form.valorAnualUSD) || 0,
+      inicioISO: inicio,
+      vencimientoISO: venc,
+      estado: "vigente",
+    };
+    await addArrendamiento(a);
+    setForm(vacio);
+    setOpen(false);
+    push("Contrato registrado ✓", "success");
+  };
 
   const ingresosAnuales = allArr
     .filter((a) => a.estado !== "vencido")
@@ -28,7 +60,7 @@ export default function Arrendamientos() {
         title="Arrendamientos y contratos"
         subtitle={`${allArr.length} contratos · ${fmtHa(haTotal)} bajo administración`}
         actions={
-          <Btn variant="primary" onClick={() => push("Formulario de nuevo contrato abierto…", "info")}>
+          <Btn variant="primary" onClick={() => setOpen(true)}>
             <FileSignature size={16} /> Nuevo contrato
           </Btn>
         }
@@ -100,6 +132,51 @@ export default function Arrendamientos() {
           </table>
         </div>
       </div>
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title="Nuevo contrato"
+        subtitle="Registrá un arrendamiento"
+        footer={
+          <>
+            <Btn variant="ghost" onClick={() => setOpen(false)}>Cancelar</Btn>
+            <Btn variant="primary" onClick={crear}>Guardar contrato</Btn>
+          </>
+        }
+      >
+        <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); crear(); }}>
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold text-graph-400">Arrendatario</span>
+            <input className={inputCls} placeholder="Nombre o razón social" value={form.arrendatario} onChange={(e) => set("arrendatario", e.target.value)} autoFocus />
+          </label>
+          <label className="block sm:col-span-2">
+            <span className="mb-1 block text-xs font-semibold text-graph-400">Campo</span>
+            <select className={inputCls} value={form.campoId} onChange={(e) => set("campoId", e.target.value)}>
+              <option value="" className="bg-paper-100 text-graph">Elegí un campo…</option>
+              {propiedades.map((p) => (
+                <option key={p.id} value={p.id} className="bg-paper-100 text-graph">{p.titulo} · {p.zona}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-graph-400">Hectáreas</span>
+            <input type="number" className={inputCls} placeholder="500" value={form.hectareas} onChange={(e) => set("hectareas", e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-graph-400">Valor anual (U$S)</span>
+            <input type="number" className={inputCls} placeholder="80000" value={form.valorAnualUSD} onChange={(e) => set("valorAnualUSD", e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-graph-400">Inicio</span>
+            <input type="date" className={inputCls} value={form.inicioISO} onChange={(e) => set("inicioISO", e.target.value)} />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-semibold text-graph-400">Vencimiento</span>
+            <input type="date" className={inputCls} value={form.vencimientoISO} onChange={(e) => set("vencimientoISO", e.target.value)} />
+          </label>
+        </form>
+      </Modal>
     </div>
   );
 }
