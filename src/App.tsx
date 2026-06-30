@@ -11,6 +11,7 @@ import { DataProvider } from "./lib/DataProvider";
 
 import { PanelAuthProvider, usePanelAuth } from "./panel/auth";
 import Login from "./panel/Login";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 // El panel (con recharts) se carga solo cuando se entra a /panel.
 const PanelApp = lazy(() => import("./panel/PanelApp"));
@@ -50,6 +51,7 @@ export default function App() {
       <FavoritesProvider>
       <PanelAuthProvider>
         <ScrollToTop />
+        <ErrorBoundary>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/propiedades" element={<Catalogo />} />
@@ -74,6 +76,7 @@ export default function App() {
           <Route path="/admin/*" element={<Navigate to="/panel" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </ErrorBoundary>
       </PanelAuthProvider>
       </FavoritesProvider>
     </AuthProvider>
