@@ -15,12 +15,13 @@ export type AsistenteConfig = {
 
 export const CONFIG: AsistenteConfig = {
   negocio: "IAGRO Campos",
-  rubro: "inmobiliaria rural especializada en venta y arrendamiento de campos, chacras y estancias",
+  rubro:
+    "inmobiliaria de Bahía Blanca: campos, chacras y estancias, y también propiedades urbanas (casas, departamentos, lotes, terrenos y locales), en venta, alquiler y arrendamiento",
   zona: "Bahía Blanca y el sudoeste bonaerense",
   desde: "1989",
   asistente: "Aldana",
-  itemSingular: "campo",
-  itemPlural: "campos",
+  itemSingular: "propiedad",
+  itemPlural: "propiedades",
   saludo:
-    "¡Hola! Soy Aldana, de IAGRO Campos. Contame qué campo estás buscando —zona, hectáreas, si es para agricultura o ganadería— y te muestro opciones.",
+    "¡Hola! Soy Aldana, de IAGRO Campos. ¿Qué estás buscando? Un campo, una casa, un depto, un lote… Contame zona y qué necesitás y te muestro opciones. 🌾",
 };

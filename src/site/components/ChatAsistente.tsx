@@ -3,13 +3,13 @@ import { Link } from "react-router-dom";
 import { MessageCircle, X, Send, Sprout, Loader2 } from "lucide-react";
 import { useData } from "@/lib/DataProvider";
 import { hoyISO } from "@/lib/fechas";
-import { fmtHa } from "@/lib/format";
-import { consultarAsistente, type ChatMsg, type CampoLite } from "@/lib/asistente";
+import { fmtHa, fmtUSD } from "@/lib/format";
+import { consultarAsistente, linkWhatsApp, type ChatMsg, type CampoLite } from "@/lib/asistente";
 import type { Lead } from "@/data/types";
 import type { Propiedad } from "@/data/propiedadTypes";
 
 const SALUDO =
-  "¡Hola! Soy Aldana, de IAGRO Campos. Contame qué campo buscás —zona, hectáreas, si es para agricultura o ganadería— y te muestro opciones. 🌾";
+  "¡Hola! Soy Aldana, de IAGRO Campos. ¿Qué estás buscando? Un campo, una casa, un depto, un lote… Contame zona y qué necesitás y te muestro opciones. 🌾";
 
 type Burbuja = { rol: "cliente" | "asistente"; texto: string; campos?: Propiedad[] };
 
@@ -20,7 +20,19 @@ export default function ChatAsistente() {
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [leadEnviado, setLeadEnviado] = useState(false);
+  const [leadNombre, setLeadNombre] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Mensaje pre-armado para WhatsApp, con el contexto de la charla.
+  const waTexto = () => {
+    const ultimoUser = [...msgs].reverse().find((m) => m.rol === "cliente")?.texto || "";
+    const recom = [...new Set(msgs.flatMap((m) => m.campos || []).map((c) => c.titulo))].slice(0, 3);
+    const partes = ["Hola, vengo de la web de IAGRO Campos."];
+    if (leadNombre) partes.push(`Soy ${leadNombre}.`);
+    if (ultimoUser) partes.push(`Estoy buscando: ${ultimoUser}`);
+    if (recom.length) partes.push(`Me interesó: ${recom.join(", ")}.`);
+    return partes.join(" ");
+  };
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -37,6 +49,7 @@ export default function ChatAsistente() {
         hectareas: p.hectareas,
         aptitud: p.aptitud,
         operacion: p.operacion,
+        precio: p.categoria === "campo" ? "A consultar" : fmtUSD(p.precioUSD),
       }));
 
   const enviar = async () => {
@@ -67,6 +80,7 @@ export default function ChatAsistente() {
         };
         addLead(lead);
         setLeadEnviado(true);
+        if (r.lead.nombre) setLeadNombre(r.lead.nombre);
       }
     } catch {
       setMsgs((m) => [
@@ -151,7 +165,7 @@ export default function ChatAsistente() {
                               {c.hectareas ? ` · ${fmtHa(c.hectareas)}` : ""}
                             </p>
                             <p className="text-[11px] font-semibold text-iagro">
-                              {c.categoria === "campo" ? "A consultar" : ""}
+                              {c.categoria === "campo" ? "A consultar" : fmtUSD(c.precioUSD)}
                             </p>
                           </div>
                         </Link>
@@ -174,6 +188,18 @@ export default function ChatAsistente() {
               <p className="pt-1 text-center text-[11px] text-graph-400">✓ Tus datos llegaron a IAGRO. Un asesor te contacta.</p>
             )}
           </div>
+
+          {/* CTA WhatsApp: derivar la charla a un asesor (aparece apenas arranca la conversación) */}
+          {msgs.some((m) => m.rol === "cliente") && (
+            <a
+              href={linkWhatsApp(waTexto())}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mx-3 mb-1.5 flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-3 py-2 text-sm font-semibold text-white transition hover:brightness-95"
+            >
+              <MessageCircle size={16} /> Seguir por WhatsApp
+            </a>
+          )}
 
           {/* input */}
           <div className="flex items-center gap-2 border-t border-graph/10 bg-white px-3 py-2.5">

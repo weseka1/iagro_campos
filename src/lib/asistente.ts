@@ -9,7 +9,16 @@ export type CampoLite = {
   hectareas?: number;
   aptitud?: string;
   operacion?: string;
+  precio?: string; // campos = "A consultar"; urbanas = precio real formateado
 };
+
+// WhatsApp al que deriva el asistente. ⚠️ Reemplazar por el número real de IAGRO
+// (solo dígitos, formato internacional; ej. 54 9 291 551-2515 → 5492915512515).
+export const WHATSAPP = "5492915512515";
+
+export function linkWhatsApp(texto: string): string {
+  return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;
+}
 
 export type RespuestaAsistente = {
   respuesta: string;
