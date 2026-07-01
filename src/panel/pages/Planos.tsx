@@ -39,6 +39,9 @@ export default function Planos() {
         Herramientas: línea recta (con imán a la grilla para que quede perfecta), curva suave, lápiz con presión del Apple Pencil,
         rectángulos para ambientes. Deshacer/rehacer, exportar a PNG y guardar el plano en la propiedad seleccionada.
       </p>
+      <p className="mt-1 text-xs text-graph-400">
+        Tocá una pared para editar su medida. Movés el pizarrón con Ctrl/⌘ + arrastrar (o con dos dedos en la tablet).
+      </p>
     </>
   );
 }

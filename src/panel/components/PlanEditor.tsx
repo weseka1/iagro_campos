@@ -688,20 +688,20 @@ function makeEngine(canvas: HTMLCanvasElement, wrap: HTMLElement, hooks: Hooks) 
 
 /* ============ componente React ============ */
 const TOOLS = [
-  { t: "recta", Icon: Minus, label: "Línea recta (pared)" },
-  { t: "curva", Icon: Spline, label: "Curva suave (bezier)" },
-  { t: "eje", Icon: GitCommitHorizontal, label: "Eje (línea de trazo-punto)" },
-  { t: "oculta", Icon: MoreHorizontal, label: "Línea oculta / proyección (punteada)" },
-  { t: "lapiz", Icon: Pencil, label: "Lápiz a mano alzada (Apple Pencil)" },
-  { t: "rect", Icon: Square, label: "Rectángulo / ambiente" },
-  { t: "escalera", Icon: StretchHorizontal, label: "Escalera" },
-  { t: "columna", Icon: Columns2, label: "Columna / pilar" },
-  { t: "puerta", Icon: DoorOpen, label: "Puerta (sobre una pared)" },
-  { t: "ventana", Icon: AppWindow, label: "Ventana (sobre una pared)" },
-  { t: "cota", Icon: MoveHorizontal, label: "Acotar (cota libre)" },
-  { t: "texto", Icon: Type, label: "Rótulo / texto" },
-  { t: "borrar", Icon: Eraser, label: "Borrar trazo" },
-  { t: "mano", Icon: Hand, label: "Mover lienzo" },
+  { t: "recta", Icon: Minus, label: "Pared recta — se pega a la grilla para que quede derecha. Después tocá la pared para editar su medida." },
+  { t: "curva", Icon: Spline, label: "Curva suave — trazá una línea curva (tipo bezier)." },
+  { t: "eje", Icon: GitCommitHorizontal, label: "Eje — línea de trazo y punto (para ejes o medianeras)." },
+  { t: "oculta", Icon: MoreHorizontal, label: "Línea oculta — punteada, para lo que va por detrás o proyectado." },
+  { t: "lapiz", Icon: Pencil, label: "Lápiz — dibujo a mano alzada, con presión del Apple Pencil." },
+  { t: "rect", Icon: Square, label: "Rectángulo — dibujá un ambiente cerrado de una." },
+  { t: "escalera", Icon: StretchHorizontal, label: "Escalera." },
+  { t: "columna", Icon: Columns2, label: "Columna o pilar." },
+  { t: "puerta", Icon: DoorOpen, label: "Puerta — colocala sobre una pared ya dibujada." },
+  { t: "ventana", Icon: AppWindow, label: "Ventana — colocala sobre una pared ya dibujada." },
+  { t: "cota", Icon: MoveHorizontal, label: "Cota — acotá una medida a mano donde quieras." },
+  { t: "texto", Icon: Type, label: "Texto — poné un rótulo (ej. “Dormitorio”)." },
+  { t: "borrar", Icon: Eraser, label: "Borrar — tocá un trazo para eliminarlo." },
+  { t: "mano", Icon: Hand, label: "Mover — arrastrá para desplazar el pizarrón." },
 ];
 
 export default function PlanEditor({ propId, propName, propImg }: { propId: string; propName: string; propImg?: string }) {
@@ -838,12 +838,12 @@ export default function PlanEditor({ propId, propName, propImg }: { propId: stri
         {!view3d && (
           <div className="absolute border border-graph/10 bg-paper-100 left-3 top-3 z-30 grid grid-cols-2 gap-1 rounded-2xl p-1.5 shadow-[0_18px_44px_-22px_rgba(23,26,23,0.4)]">
             {TOOLS.map(({ t, Icon, label }) => (
-              <button key={t} title={label} onClick={() => setTool(t)}
+              <button key={t} data-tip={label} data-tip-side="right" onClick={() => setTool(t)}
                 className={`grid h-10 w-10 place-items-center rounded-xl transition ${tool === t ? "bg-iagro text-white shadow-[0_8px_18px_-8px_rgba(46,125,82,0.7)]" : "text-graph-500 hover:bg-graph/[0.06] hover:text-graph"}`}>
                 <Icon size={18} />
               </button>
             ))}
-            <button title="Calibrar escala con una medida real" onClick={() => setTool(tool === "calibrar" ? "recta" : "calibrar")}
+            <button data-tip="Calibrar la escala — dibujá una medida que conozcas y decile cuánto mide en la realidad." data-tip-side="right" onClick={() => setTool(tool === "calibrar" ? "recta" : "calibrar")}
               className={`col-span-2 grid h-9 place-items-center rounded-xl transition ${tool === "calibrar" ? "bg-iagro text-white" : "text-graph-400 hover:bg-graph/[0.06] hover:text-graph"}`}><Crosshair size={16} /></button>
           </div>
         )}
@@ -853,32 +853,32 @@ export default function PlanEditor({ propId, propName, propImg }: { propId: stri
           <div className="absolute border border-graph/10 bg-paper-100 left-1/2 top-3 z-20 flex -translate-x-1/2 items-center gap-1 rounded-2xl px-2 py-1.5 shadow-[0_18px_44px_-22px_rgba(23,26,23,0.4)]">
             <Layers size={14} className="ml-1 mr-0.5 text-iagro" />
             {floors.map((name, i) => (
-              <button key={i} onClick={() => switchFloor(i)} title={name}
+              <button key={i} onClick={() => switchFloor(i)} data-tip={`Ir al piso: ${name}`} data-tip-side="bottom"
                 className={`h-7 rounded-lg px-2.5 text-xs font-semibold transition ${active === i ? "bg-iagro text-white" : "text-graph-500 hover:bg-graph/[0.06]"}`}>{i === 0 ? "PB" : `${i}°`}</button>
             ))}
-            <button onClick={() => addFloor(false)} title="Agregar piso" className="grid h-7 w-7 place-items-center rounded-lg text-graph-500 transition hover:bg-graph/[0.06]"><Plus size={14} /></button>
-            {active > 0 && <button onClick={copyBelow} title="Copiar contorno de abajo" className="grid h-7 w-7 place-items-center rounded-lg text-graph-500 transition hover:bg-graph/[0.06]"><Copy size={13} /></button>}
-            {floors.length > 1 && <button onClick={delFloor} title="Eliminar piso" className="grid h-7 w-7 place-items-center rounded-lg text-graph-400 transition hover:bg-red-500/10 hover:text-red-600"><Trash2 size={13} /></button>}
+            <button onClick={() => addFloor(false)} data-tip="Agregar un piso" data-tip-side="bottom" className="grid h-7 w-7 place-items-center rounded-lg text-graph-500 transition hover:bg-graph/[0.06]"><Plus size={14} /></button>
+            {active > 0 && <button onClick={copyBelow} data-tip="Copiar el contorno del piso de abajo" data-tip-side="bottom" className="grid h-7 w-7 place-items-center rounded-lg text-graph-500 transition hover:bg-graph/[0.06]"><Copy size={13} /></button>}
+            {floors.length > 1 && <button onClick={delFloor} data-tip="Eliminar este piso" data-tip-side="bottom" className="grid h-7 w-7 place-items-center rounded-lg text-graph-400 transition hover:bg-red-500/10 hover:text-red-600"><Trash2 size={13} /></button>}
           </div>
         )}
 
         {/* acciones (arriba derecha) */}
         <div className="absolute border border-graph/10 bg-paper-100 right-3 top-3 z-30 flex items-center gap-1 rounded-2xl p-1.5 shadow-[0_18px_44px_-22px_rgba(23,26,23,0.4)]">
-          {!view3d && <button onClick={doExample} title="Cargar planta de ejemplo" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Home size={16} /></button>}
-          <button onClick={() => (view3d ? setView3d(false) : go3d())} title={view3d ? "Volver a 2D" : "Ver en 3D"}
+          {!view3d && <button onClick={doExample} data-tip="Cargar una planta de ejemplo" data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Home size={16} /></button>}
+          <button onClick={() => (view3d ? setView3d(false) : go3d())} data-tip={view3d ? "Volver al plano 2D" : "Ver el plano en 3D"} data-tip-side="bottom"
             className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-iagro/40 px-3 text-sm font-semibold text-iagro transition hover:bg-iagro/10"><Box size={15} /> {view3d ? "2D" : "3D"}</button>
           {!view3d && (
             <>
               <div className="mx-0.5 h-5 w-px bg-graph/10" />
-              <button onClick={() => eng.current?.undo()} title="Deshacer" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Undo2 size={16} /></button>
-              <button onClick={() => eng.current?.redo()} title="Rehacer" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Redo2 size={16} /></button>
-              <button onClick={() => eng.current?.clear()} title="Vaciar" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Trash2 size={16} /></button>
-              <button onClick={doExport} title="Exportar PNG" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Download size={16} /></button>
-              <button onClick={doSave} title="Guardar" className="grid h-9 w-9 place-items-center rounded-xl bg-iagro text-white transition hover:bg-iagro-600">{saved ? <Check size={16} /> : <Save size={16} />}</button>
+              <button onClick={() => eng.current?.undo()} data-tip="Deshacer" data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Undo2 size={16} /></button>
+              <button onClick={() => eng.current?.redo()} data-tip="Rehacer" data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Redo2 size={16} /></button>
+              <button onClick={() => eng.current?.clear()} data-tip="Vaciar todo el pizarrón" data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Trash2 size={16} /></button>
+              <button onClick={doExport} data-tip="Exportar el plano a imagen (PNG)" data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph"><Download size={16} /></button>
+              <button onClick={doSave} data-tip="Guardar el plano en la propiedad" data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl bg-iagro text-white transition hover:bg-iagro-600">{saved ? <Check size={16} /> : <Save size={16} />}</button>
             </>
           )}
           <div className="mx-0.5 h-5 w-px bg-graph/10" />
-          <button onClick={() => setExpanded((v) => !v)} title={expanded ? "Achicar" : "Agrandar el pizarrón"} className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph">{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
+          <button onClick={() => setExpanded((v) => !v)} data-tip={expanded ? "Achicar" : "Pantalla completa"} data-tip-side="bottom" className="grid h-9 w-9 place-items-center rounded-xl text-graph-500 transition hover:bg-graph/[0.06] hover:text-graph">{expanded ? <Minimize2 size={16} /> : <Maximize2 size={16} />}</button>
         </div>
 
         {/* propiedades (abajo centro): colores · grosor · grilla/imán/medidas/fondo · escala */}
@@ -886,21 +886,21 @@ export default function PlanEditor({ propId, propName, propImg }: { propId: stri
           <div className="absolute border border-graph/10 bg-paper-100 bottom-3 left-1/2 z-20 flex max-w-[94%] -translate-x-1/2 flex-wrap items-center justify-center gap-2 rounded-2xl px-3 py-2 shadow-[0_18px_44px_-22px_rgba(23,26,23,0.4)]">
             <div className="flex items-center gap-1.5">
               {COLORS.map((c) => (
-                <button key={c} onClick={() => setColor(c)} title="Color" className={`h-5 w-5 rounded-full ring-1 ring-graph/15 transition ${color === c ? "ring-2 ring-iagro" : ""}`} style={{ background: c }} />
+                <button key={c} onClick={() => setColor(c)} data-tip="Color del trazo" data-tip-side="top" className={`h-5 w-5 rounded-full ring-1 ring-graph/15 transition ${color === c ? "ring-2 ring-iagro" : ""}`} style={{ background: c }} />
               ))}
             </div>
             <div className="h-5 w-px bg-graph/10" />
-            <input type="range" min={1} max={14} value={width} onChange={(e) => setWidth(+e.target.value)} title="Grosor del trazo" className="w-16 accent-iagro" />
+            <input type="range" min={1} max={14} value={width} onChange={(e) => setWidth(+e.target.value)} data-tip="Grosor del trazo" data-tip-side="top" className="w-16 accent-iagro" />
             <div className="h-5 w-px bg-graph/10" />
-            <button onClick={() => setGrid((v) => !v)} title="Grilla" className={`grid h-8 w-8 place-items-center rounded-lg transition ${grid ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><Grid3x3 size={16} /></button>
-            <button onClick={() => setSnap((v) => !v)} title="Imán a la grilla" className={`grid h-8 w-8 place-items-center rounded-lg transition ${snap ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><Magnet size={16} /></button>
-            <button onClick={() => setMeasures((v) => !v)} title="Medidas / cotas" className={`grid h-8 w-8 place-items-center rounded-lg transition ${measures ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><Ruler size={16} /></button>
-            <button onClick={() => setBgPanel((v) => !v)} title="Imagen de fondo (calco)" className={`grid h-8 w-8 place-items-center rounded-lg transition ${bg?.has || bgPanel ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><ImageIcon size={16} /></button>
+            <button onClick={() => setGrid((v) => !v)} data-tip="Mostrar u ocultar la grilla" data-tip-side="top" className={`grid h-8 w-8 place-items-center rounded-lg transition ${grid ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><Grid3x3 size={16} /></button>
+            <button onClick={() => setSnap((v) => !v)} data-tip="Imán: las líneas se pegan a la grilla para que queden perfectas" data-tip-side="top" className={`grid h-8 w-8 place-items-center rounded-lg transition ${snap ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><Magnet size={16} /></button>
+            <button onClick={() => setMeasures((v) => !v)} data-tip="Mostrar u ocultar las medidas de cada pared" data-tip-side="top" className={`grid h-8 w-8 place-items-center rounded-lg transition ${measures ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><Ruler size={16} /></button>
+            <button onClick={() => setBgPanel((v) => !v)} data-tip="Imagen de fondo para calcar (satelital del campo o foto)" data-tip-side="top" className={`grid h-8 w-8 place-items-center rounded-lg transition ${bg?.has || bgPanel ? "text-iagro" : "text-graph-400"} hover:bg-graph/[0.06]`}><ImageIcon size={16} /></button>
             <div className="h-5 w-px bg-graph/10" />
-            <select value={mPerCell} onChange={(e) => setMPerCell(+e.target.value)} title="Escala (metros por cuadro)" className="rounded-lg border border-graph/10 bg-paper-100 px-2 py-1 text-xs text-graph outline-none focus:border-iagro/60">
+            <select value={mPerCell} onChange={(e) => setMPerCell(+e.target.value)} data-tip="Escala: cuántos metros mide cada cuadro de la grilla" data-tip-side="top" className="rounded-lg border border-graph/10 bg-paper-100 px-2 py-1 text-xs text-graph outline-none focus:border-iagro/60">
               {scaleOpts.map((s) => <option key={s.m} value={s.m} className="bg-paper-100 text-graph">1 cuadro = {s.label}</option>)}
             </select>
-            <select value={unit} onChange={(e) => setUnit(e.target.value as any)} title="Unidad de superficie" className="rounded-lg border border-graph/10 bg-paper-100 px-2 py-1 text-xs text-graph outline-none focus:border-iagro/60">
+            <select value={unit} onChange={(e) => setUnit(e.target.value as any)} data-tip="Unidad de superficie (m² o hectáreas)" data-tip-side="top" className="rounded-lg border border-graph/10 bg-paper-100 px-2 py-1 text-xs text-graph outline-none focus:border-iagro/60">
               <option value="auto" className="bg-paper-100 text-graph">m² / ha</option>
               <option value="m2" className="bg-paper-100 text-graph">m²</option>
               <option value="ha" className="bg-paper-100 text-graph">ha</option>
@@ -997,12 +997,6 @@ export default function PlanEditor({ propId, propName, propImg }: { propId: stri
               placeholder="metros reales" inputMode="decimal"
               className="w-28 bg-transparent px-2.5 py-1.5 text-sm font-semibold text-graph outline-none placeholder:text-graph/40" />
             <button onMouseDown={(e) => e.preventDefault()} onClick={commitCalib} className="bg-[#2E7D52] px-2.5 py-1.5 text-xs font-semibold text-white">OK</button>
-          </div>
-        )}
-
-        {!view3d && (
-          <div className="pointer-events-none absolute bottom-3 right-3 z-10 hidden rounded-full bg-graph/75 px-3 py-1 text-[10px] font-medium text-white backdrop-blur md:block">
-            Ctrl/⌘ + arrastrar = mover el pizarrón · dos dedos en tablet · tocá una pared para editar su medida
           </div>
         )}
 

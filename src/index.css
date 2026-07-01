@@ -168,3 +168,53 @@ html.lenis body {
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* ===== Tooltips estilo "card" (data-tip) — instantáneos y redondeados (editor de planos, etc.) ===== */
+[data-tip] {
+  position: relative;
+}
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  z-index: 80;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) translateY(4px) scale(0.97);
+  width: max-content;
+  max-width: 230px;
+  white-space: normal;
+  text-align: left;
+  font-size: 11px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(17, 16, 11, 0.94);
+  padding: 8px 11px;
+  border-radius: 12px;
+  box-shadow: 0 14px 34px -10px rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+[data-tip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
+}
+[data-tip-side="right"]::after {
+  left: calc(100% + 8px);
+  bottom: auto;
+  top: 50%;
+  transform: translateY(-50%) translateX(-4px) scale(0.97);
+}
+[data-tip-side="right"]:hover::after {
+  transform: translateY(-50%) translateX(0) scale(1);
+}
+[data-tip-side="bottom"]::after {
+  bottom: auto;
+  top: calc(100% + 8px);
+  transform: translateX(-50%) translateY(-4px) scale(0.97);
+}
+[data-tip-side="bottom"]:hover::after {
+  transform: translateX(-50%) translateY(0) scale(1);
+}
