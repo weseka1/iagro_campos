@@ -12,6 +12,7 @@ import { DataProvider } from "./lib/DataProvider";
 import { PanelAuthProvider, usePanelAuth } from "./panel/auth";
 import Login from "./panel/Login";
 import { ErrorBoundary } from "./ErrorBoundary";
+import ChatAsistente from "./site/components/ChatAsistente";
 
 // El panel (con recharts) se carga solo cuando se entra a /panel.
 const PanelApp = lazy(() => import("./panel/PanelApp"));
@@ -42,6 +43,14 @@ function PanelFallback() {
       Cargando panel…
     </div>
   );
+}
+
+// El asistente web sólo aparece en la web pública, nunca en el panel/login.
+function SiteChat() {
+  const { pathname } = useLocation();
+  const enPanel = pathname.startsWith("/panel") || pathname.startsWith("/admin") || pathname === "/ingresar";
+  if (enPanel) return null;
+  return <ChatAsistente />;
 }
 
 export default function App() {
@@ -76,6 +85,7 @@ export default function App() {
           <Route path="/admin/*" element={<Navigate to="/panel" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <SiteChat />
         </ErrorBoundary>
       </PanelAuthProvider>
       </FavoritesProvider>

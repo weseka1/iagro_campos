@@ -1,0 +1,15 @@
+# Netlify config — IAGRO Campos
+# Habilita las Netlify Functions (el "cerebro" del asistente web) y el fallback SPA.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# SPA fallback (además de public/_redirects, por si el deploy no lo toma).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

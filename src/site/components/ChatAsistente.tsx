@@ -1,0 +1,200 @@
+import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
+import { MessageCircle, X, Send, Sprout, Loader2 } from "lucide-react";
+import { useData } from "@/lib/DataProvider";
+import { hoyISO } from "@/lib/fechas";
+import { fmtHa } from "@/lib/format";
+import { consultarAsistente, type ChatMsg, type CampoLite } from "@/lib/asistente";
+import type { Lead } from "@/data/types";
+import type { Propiedad } from "@/data/propiedadTypes";
+
+const SALUDO =
+  "¡Hola! Soy Aldana, de IAGRO Campos. Contame qué campo buscás —zona, hectáreas, si es para agricultura o ganadería— y te muestro opciones. 🌾";
+
+type Burbuja = { rol: "cliente" | "asistente"; texto: string; campos?: Propiedad[] };
+
+export default function ChatAsistente() {
+  const { propiedades, addLead } = useData();
+  const [open, setOpen] = useState(false);
+  const [msgs, setMsgs] = useState<Burbuja[]>([{ rol: "asistente", texto: SALUDO }]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [leadEnviado, setLeadEnviado] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [msgs, busy, open]);
+
+  const catalogo = (): CampoLite[] =>
+    propiedades
+      .filter((p) => p.estado === "disponible")
+      .map((p) => ({
+        id: p.id,
+        titulo: p.titulo,
+        zona: p.zona,
+        categoria: p.categoria,
+        hectareas: p.hectareas,
+        aptitud: p.aptitud,
+        operacion: p.operacion,
+      }));
+
+  const enviar = async () => {
+    const texto = input.trim();
+    if (!texto || busy) return;
+    const historial: ChatMsg[] = msgs.map((m) => ({ rol: m.rol, texto: m.texto }));
+    setMsgs((m) => [...m, { rol: "cliente", texto }]);
+    setInput("");
+    setBusy(true);
+    try {
+      const r = await consultarAsistente(texto, historial, catalogo());
+      const campos = r.camposIds
+        .map((id) => propiedades.find((p) => p.id === id))
+        .filter((p): p is Propiedad => Boolean(p));
+      setMsgs((m) => [...m, { rol: "asistente", texto: r.respuesta, campos: campos.length ? campos : undefined }]);
+
+      if (r.lead && !leadEnviado) {
+        const lead: Lead = {
+          id: "WEB-" + Date.now().toString(36),
+          fechaISO: hoyISO(),
+          nombre: r.lead.nombre || "Consulta web",
+          contacto: r.lead.contacto,
+          campoId: campos[0]?.id ?? null,
+          canal: "web",
+          estado: "nueva",
+          asignado: "Sin asignar",
+          notas: "Consulta capturada por el asistente IA de la web.",
+        };
+        addLead(lead);
+        setLeadEnviado(true);
+      }
+    } catch {
+      setMsgs((m) => [
+        ...m,
+        {
+          rol: "asistente",
+          texto:
+            "Disculpá, el asistente no está disponible en este momento. Escribinos por WhatsApp o dejanos tu mail y te contactamos a la brevedad.",
+        },
+      ]);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      {/* botón flotante */}
+      {!open && (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Abrir asistente"
+          className="fixed bottom-5 right-5 z-[60] grid h-14 w-14 place-items-center rounded-full bg-iagro text-white shadow-[0_12px_30px_-8px_rgba(46,125,82,0.7)] transition hover:scale-105 hover:bg-iagro-600"
+        >
+          <MessageCircle size={24} />
+          <span className="absolute -right-0.5 -top-0.5 h-3.5 w-3.5 rounded-full border-2 border-white bg-wheat" />
+        </button>
+      )}
+
+      {/* panel */}
+      {open && (
+        <div className="fixed bottom-5 right-5 z-[60] flex h-[min(80vh,560px)] w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-graph/10 bg-white shadow-2xl">
+          {/* header */}
+          <div className="flex items-center justify-between bg-iagro px-4 py-3 text-white">
+            <div className="flex items-center gap-2.5">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-white/15">
+                <Sprout size={18} />
+              </span>
+              <div className="leading-tight">
+                <p className="text-sm font-semibold">Aldana · Asesora IAGRO</p>
+                <p className="text-[11px] text-white/80">Te respondo al toque</p>
+              </div>
+            </div>
+            <button onClick={() => setOpen(false)} aria-label="Cerrar" className="rounded-full p-1 transition hover:bg-white/15">
+              <X size={18} />
+            </button>
+          </div>
+
+          {/* mensajes */}
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-paper-100 px-3 py-4">
+            {msgs.map((m, i) => (
+              <div key={i} className={m.rol === "cliente" ? "flex justify-end" : "flex justify-start"}>
+                <div className="max-w-[85%]">
+                  <div
+                    className={
+                      m.rol === "cliente"
+                        ? "rounded-2xl rounded-br-sm bg-iagro px-3.5 py-2 text-sm text-white"
+                        : "rounded-2xl rounded-bl-sm bg-white px-3.5 py-2 text-sm text-graph shadow-sm ring-1 ring-graph/5"
+                    }
+                  >
+                    {m.texto}
+                  </div>
+                  {m.campos && (
+                    <div className="mt-2 space-y-2">
+                      {m.campos.map((c) => (
+                        <Link
+                          key={c.id}
+                          to={`/propiedad/${c.id}`}
+                          onClick={() => setOpen(false)}
+                          className="flex items-center gap-3 rounded-xl border border-graph/10 bg-white p-2 transition hover:border-iagro/40 hover:shadow-sm"
+                        >
+                          <img
+                            src={c.fotos?.[0] || ""}
+                            alt=""
+                            className="h-12 w-14 shrink-0 rounded-lg bg-graph/5 object-cover"
+                            onError={(e) => ((e.currentTarget.style.visibility = "hidden"))}
+                          />
+                          <div className="min-w-0 leading-tight">
+                            <p className="truncate text-[13px] font-semibold text-graph">{c.titulo}</p>
+                            <p className="truncate text-[11px] text-graph-400">
+                              {c.zona}
+                              {c.hectareas ? ` · ${fmtHa(c.hectareas)}` : ""}
+                            </p>
+                            <p className="text-[11px] font-semibold text-iagro">
+                              {c.categoria === "campo" ? "A consultar" : ""}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {busy && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-2 rounded-2xl rounded-bl-sm bg-white px-3.5 py-2.5 text-sm text-graph-400 shadow-sm ring-1 ring-graph/5">
+                  <Loader2 size={15} className="animate-spin text-iagro" /> Escribiendo…
+                </div>
+              </div>
+            )}
+
+            {leadEnviado && (
+              <p className="pt-1 text-center text-[11px] text-graph-400">✓ Tus datos llegaron a IAGRO. Un asesor te contacta.</p>
+            )}
+          </div>
+
+          {/* input */}
+          <div className="flex items-center gap-2 border-t border-graph/10 bg-white px-3 py-2.5">
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") enviar(); }}
+              placeholder="Escribí tu consulta…"
+              className="h-10 flex-1 rounded-xl border border-graph/15 bg-paper-100 px-3 text-sm text-graph outline-none transition placeholder:text-graph-400 focus:border-iagro/60 focus:bg-white focus:ring-2 focus:ring-iagro/15"
+            />
+            <button
+              onClick={enviar}
+              disabled={busy || !input.trim()}
+              aria-label="Enviar"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-iagro text-white transition hover:bg-iagro-600 disabled:opacity-40"
+            >
+              <Send size={17} />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
