@@ -26,6 +26,19 @@ function json(obj: unknown, status = 200): Response {
   });
 }
 
+// Extrae el primer objeto JSON válido de la respuesta del modelo (tolera fences o texto extra/cortado).
+function extractJson(text: string): any {
+  if (!text) return null;
+  let t = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+  try { return JSON.parse(t); } catch { /* seguimos intentando */ }
+  const i = t.indexOf("{");
+  const j = t.lastIndexOf("}");
+  if (i >= 0 && j > i) {
+    try { return JSON.parse(t.slice(i, j + 1)); } catch { /* nada */ }
+  }
+  return null;
+}
+
 export default async (req: Request): Promise<Response> => {
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
@@ -60,27 +73,22 @@ export default async (req: Request): Promise<Response> => {
   try {
     const resp = await client.messages.create({
       model: "claude-haiku-4-5",
-      max_tokens: 700,
+      max_tokens: 1024,
       system: buildSystem(CONFIG, catalogo),
       messages,
-      // structured outputs (canonical): fuerza JSON válido según SCHEMA
+      // structured outputs (cuando aplica) + el formato JSON también va explícito en el prompt
       output_config: { format: { type: "json_schema", schema: SCHEMA } },
     } as any);
 
-    const text = (resp.content.find((b: any) => b.type === "text") as any)?.text ?? "{}";
-    let data: any = {};
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { respuesta: text };
-    }
+    const text = (resp.content.find((b: any) => b.type === "text") as any)?.text ?? "";
+    const data = extractJson(text) ?? {};
 
-    const respuesta = String(data?.respuesta ?? "").trim() || "¿En qué lo puedo ayudar?";
+    const respuesta =
+      String(data?.respuesta ?? "").trim() ||
+      "Perdón, no te entendí bien. ¿Me lo repetís? Contame qué buscás (un campo, una casa, un depto…) y en qué zona.";
     const camposIds = Array.isArray(data?.campos_ids) ? data.campos_ids.map(String).slice(0, 3) : [];
     const contacto = String(data?.lead_contacto ?? "").trim();
-    const lead = contacto
-      ? { nombre: String(data?.lead_nombre ?? "").trim(), contacto }
-      : null;
+    const lead = contacto ? { nombre: String(data?.lead_nombre ?? "").trim(), contacto } : null;
 
     return json({ respuesta, camposIds, lead });
   } catch (e: any) {

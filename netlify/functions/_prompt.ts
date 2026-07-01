@@ -44,5 +44,10 @@ Reglas:
 Catálogo disponible (ID | título | zona | tipo | detalle | operación | precio):
 ${lista || "(no hay propiedades cargadas en este momento)"}
 
-Respondé SIEMPRE en el formato JSON pedido.`;
+FORMATO DE SALIDA — OBLIGATORIO:
+Respondé con UN ÚNICO objeto JSON válido y COMPLETO, sin texto antes ni después, sin comillas de código (nada de \`\`\`), con EXACTAMENTE estas cuatro claves:
+{"respuesta": "<lo que le decís al visitante>", "campos_ids": ["ID1","ID2"], "lead_nombre": "", "lead_contacto": ""}
+- "campos_ids": IDs exactos del catálogo a recomendar (0 a 3). Si no recomendás ninguno, poné [].
+- "lead_nombre" y "lead_contacto": el nombre y el teléfono/email si los dio; si no, cadena vacía "".
+Asegurate de cerrar bien las llaves y comillas.`;
 }
